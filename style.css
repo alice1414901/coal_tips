@@ -22,8 +22,34 @@ html, body {
 
 h1, h2, h3, p, figure {
   font-family: "Cormorant Garamond", "Garamond", "Georgia", serif;
+  margin-bottom: 10px;
 }
 
+p, figcaption, iframe {
+  margin-bottom: 1rem;
+}
+
+#main-img {
+  width: 100%;
+  max-width: 800px;
+}
+.img-cap {
+  text-align: center;      
+}
+
+.img-cap img {
+  display: inline-block;  
+}
+
+#horizontal-imgs {
+  display: flex;
+  gap: 1rem;
+}
+.horizontal-img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+}
 img { 
   width: 100%;
   max-width: 600px;
@@ -41,16 +67,17 @@ img {
   text-align: center;
 }
 
+
 #title-intro h1 {
   margin-bottom: 1rem;
   margin-top: 1.5rem;
 }
 
 #title-intro p {
-  margin-bottom: 1.9rem;
+  margin-bottom: 1.7rem;
 }
 
-#content {
+#content, #credit {
   margin: auto;
   width: 70%;
   max-width: 800px;
@@ -140,7 +167,7 @@ figure {
   margin: 0 0.1em;
 }
 
-@media (max-width: 481px) {
+@media (max-width: 499px) {
   .step {
     position: static !important;
     width: 95% !important;

@@ -1,6 +1,6 @@
 const mapData = {}; // global object
 let scroller;
-let isMobileMode = window.innerWidth < 481;
+let isMobileMode = window.innerWidth < 500;
 let lastIsMobile = isMobileMode;
 
 // load data, create svg, base map and tips
@@ -24,7 +24,7 @@ function setUpMap() {
       .attr("width", width)
       .attr("height", height);
 
-    const projection = d3.geoMercator().fitSize([width, height - 25], geo);
+    const projection = d3.geoMercator().fitSize([width, height-25], geo);
     const path = d3.geoPath().projection(projection);
 
     // g.boundaries
@@ -37,7 +37,7 @@ function setUpMap() {
       .attr("stroke", "#333");
 
     // g.tips
-    svg.append("g").attr("class", "tips")
+    svg.append("g").attr("class","tips")
       .selectAll("circle")
       .data(tips.features.filter(d => d.geometry && d.geometry.coordinates))
       .join("circle")
@@ -51,74 +51,20 @@ function setUpMap() {
     mapData.projection = projection;
     mapData.path = path;
     mapData.svg = svg;
-  }).catch(err => console.error("Error loading data:", err));
+  }).catch(err => console.error("error loading the data:", err));
 }
 
 // functions for zoom logic 
-function desktopZoom(width, height) {
-  const southWalesFeatures = mapData.map.features.filter(d => [
-    "Blaenau Gwent","Bridgend","Caerphilly","Cardiff","Merthyr Tydfil",
-    "Neath Port Talbot","Rhondda Cynon Taf","Swansea","Vale of Glamorgan"
-  ].includes(d.properties.LAD25NMW));
-
-  if (!southWalesFeatures.length) return {scale: 1, translate: [0, 0]};
-
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  southWalesFeatures.forEach(f => {
-    const b = mapData.path.bounds(f);
-    x0 = Math.min(x0, b[0][0]);
-    y0 = Math.min(y0, b[0][1]);
-    x1 = Math.max(x1, b[1][0]);
-    y1 = Math.max(y1, b[1][1]);
-  });
-
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  let scale = Math.min(width / dx, height / dy) * 0.5;
-  let translateX = width / 2 - (x0 + dx / 2) * scale;
-  translateX += 80; //offset
-  let translateY = height / 2 - (y0 + dy / 2) * scale;
-
-  if (!isFinite(scale) || !isFinite(translateX) || !isFinite(translateY)) {
-    scale = 1;
-    translateX = 0;
-    translateY = 0;
-  }
-
-  return { scale, translate: [translateX, translateY] };
+function desktopZoom(){
+  const scale = 1.5;
+  const translate = [-200,-250]; 
+  return {scale, translate};
 }
 
-function mobileZoom(path, width, height) {
-  const southWalesFeatures = mapData.map.features.filter(d => [
-    "Blaenau Gwent","Bridgend","Caerphilly","Cardiff","Merthyr Tydfil",
-    "Neath Port Talbot","Rhondda Cynon Taf","Swansea","Vale of Glamorgan"
-  ].includes(d.properties.LAD25NMW));
-
-  if (!southWalesFeatures.length) return { scale: 1, translate: [0, 0] };
-
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  southWalesFeatures.forEach(f => {
-    const b = path.bounds(f);
-    x0 = Math.min(x0, b[0][0]);
-    y0 = Math.min(y0, b[0][1]);
-    x1 = Math.max(x1, b[1][0]);
-    y1 = Math.max(y1, b[1][1]);
-  });
-
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  let scale = Math.min(width / dx, height / dy) * 0.5;
-  let translateX = width / 2 - (x0 + dx / 2) * scale;
-  translateX += 30; //tweaking
-  let translateY = height / 2 - (y0 + dy / 2) * scale;
-
-  if (!isFinite(scale) || !isFinite(translateX) || !isFinite(translateY)) {
-    scale = 1;
-    translateX = 0;
-    translateY = 0;
-  }
-
-  return {scale, translate: [translateX, translateY]};
+function mobileZoom() {
+  const scale = 2.3;
+  const translate = [-320, -395]; 
+  return {scale, translate};
 }
 
 // draw chart (desktop)
@@ -129,7 +75,7 @@ function drawChart(stepIndex) {
   const g = svg.selectAll("g.boundaries, g.tips");
 
   // reset transform for steps 0 and 1
-  if (stepIndex === 0 || stepIndex === 1) {
+  if (stepIndex === 0 ||stepIndex === 1) {
     g.transition()
       .duration(1000)
       .attr("transform", "translate(0,0) scale(1)");
@@ -151,19 +97,15 @@ function drawChart(stepIndex) {
         .attr("opacity", 0.6)
         .attr("fill", d => {
           const cat = d.properties.cat?.toUpperCase();
-          return cat === "C" ? "orange" : cat === "D" ? "red" : "gray";
+          return cat === "C"? "orange": cat === "D"? "red": "gray";
         });
       break;
 
     case 2: {
-      const {scale, translate} = desktopZoom(+svg.attr("width"), +svg.attr("height"));
-      g.transition()
-        .duration(1500)
-        .attrTween("transform", function() {
-          const current = this.getAttribute("transform") || "translate(0,0) scale(1)";
-          return d3.interpolateTransformSvg(current, `translate(${translate}) scale(${scale})`);
-        });
-
+const {scale, translate} = desktopZoom();
+g.transition()
+  .duration(1500)
+  .attr("transform", `scale(${scale}) translate(${translate})`);
       svg.selectAll("g.tips circle")
         .transition()
         .duration(1500)
@@ -171,38 +113,34 @@ function drawChart(stepIndex) {
         .attr("stroke-width", 0.6)
         .attr("fill", d => {
           const cat = d.properties.cat?.toUpperCase();
-          return cat === "C" ? "orange" : cat === "D" ? "red" : "gray";
+          return cat === "C"? "orange": cat === "D"? "red": "gray";
         });
       break;
     }
 
-    case 3: {
-      const { scale, translate } = desktopZoom(+svg.attr("width"), +svg.attr("height"));
-      g.transition()
-        .duration(1500)
-        .attrTween("transform", function() {
-          const current = this.getAttribute("transform") || "translate(0,0) scale(1)";
-          return d3.interpolateTransformSvg(current, `translate(${translate}) scale(${scale})`);
-        });
+case 3: {
+  const {scale, translate} = desktopZoom();
+  g.transition()
+    .duration(1500)
+    .attr("transform", `scale(${scale}) translate(${translate})`);
 
-      svg.selectAll("g.tips circle")
-        .transition()
-        .duration(100)
-        .attr("opacity", d => d.properties.authority_english === "Rhondda Cynon Taf" ? 0.6 : 0)
-        .attr("fill", d => {
-          const cat = d.properties.cat?.toUpperCase();
-          return cat === "C" ? "orange" : cat === "D" ? "red" : "gray";
-        });
-      break;
-    }
-
+  svg.selectAll("g.tips circle")
+    .transition()
+    .duration(100)
+    .attr("opacity", d => d.properties.authority_english === "Rhondda Cynon Taf" ? 0.6 : 0)
+    .attr("fill", d => {
+      const cat = d.properties.cat?.toUpperCase();
+      return cat === "C"? "orange": cat === "D"? "red": "gray";
+    });
+  break;
+}
     default:
       break;
   }
-}
+};
 
 // mobile chart
-function drawChartMobile(stepIndex, container) {
+function drawChartMobile(stepIndex, container){
   const {map, tips} = mapData;
 
   // clear previous chart if exists
@@ -253,45 +191,44 @@ function drawChartMobile(stepIndex, container) {
         .attr("opacity", 0.6)
         .attr("fill", d => {
           const cat = d.properties.cat?.toUpperCase();
-          return cat === "C" ? "orange" : cat === "D" ? "red" : "gray";
+          return cat === "C"? "orange" : cat === "D"? "red" : "gray";
         });
       break;
 
-    case 2: {
-const {scale, translate} = mobileZoom(path, width, height);
-gBoundaries.attr("transform", `translate(${translate}) scale(${scale})`);
-gTips.attr("transform", `translate(${translate}) scale(${scale})`);
+case 2: {
+  const {scale, translate} = mobileZoom();
+  gBoundaries.attr("transform", `translate(${translate}) scale(${scale})`);
+  gTips.attr("transform", `translate(${translate}) scale(${scale})`);
 
-      gTips.selectAll("circle")
-        .attr("r", 1)
-        .attr("opacity", 0.6)
-        .attr("fill", d => {
-          const cat = d.properties.cat?.toUpperCase();
-          return cat === "C" ? "orange" : cat === "D" ? "red" : "gray";
-        });
-      break;
-    }
-
-    case 3: {
-const {scale, translate} = mobileZoom(path, width, height);
-gBoundaries.attr("transform", `translate(${translate}) scale(${scale})`);
-gTips.attr("transform", `translate(${translate}) scale(${scale})`);
-
-      gTips.selectAll("circle")
-        .attr("r", 1)
-      .attr("opacity", d => d.properties.authority_english === "Rhondda Cynon Taf" ? 0.6 : 0)
-        .attr("fill", d => {
-          const cat = d.properties.cat?.toUpperCase();
-          return cat === "C" ? "orange" : cat === "D" ? "red" : "gray";
-        });
-      break;
-    }
-  }
+  gTips.selectAll("circle")
+    .attr("r", 1)
+    .attr("opacity", 0.6)
+    .attr("fill", d => {
+      const cat = d.properties.cat?.toUpperCase();
+      return cat === "C"? "orange": cat === "D"? "red": "gray";
+    });
+  break;
 }
+
+case 3: {
+  const {scale, translate} = mobileZoom();
+  gBoundaries.attr("transform", `translate(${translate}) scale(${scale})`);
+  gTips.attr("transform", `translate(${translate}) scale(${scale})`);
+
+  gTips.selectAll("circle")
+    .attr("r", 1)
+    .attr("opacity", d => d.properties.authority_english === "Rhondda Cynon Taf" ? 0.6 : 0)
+    .attr("fill", d => {
+      const cat = d.properties.cat?.toUpperCase();
+      return cat === "C"? "orange": cat === "D"? "red": "gray";
+    });
+  break;
+}
+}};
 
 // scrollama setup
 function setupScroll() {
-  const isMobile = window.innerWidth < 481;
+  const isMobile = window.innerWidth < 500;
   const steps = document.querySelectorAll(".step");
 
   if (!isMobile) {
@@ -314,10 +251,10 @@ function setupScroll() {
 
 // resize
 // track previous mode for breakpoint reload
-lastIsMobile = window.innerWidth < 481;
+lastIsMobile = window.innerWidth < 500;
 
 window.addEventListener("resize", () => {
-  const isMobileNow = window.innerWidth < 481;
+  const isMobileNow = window.innerWidth < 500;
 
   // reload the page if switching desktop and mobile
   if (isMobileNow !== lastIsMobile) {
@@ -347,11 +284,3 @@ window.addEventListener("resize", () => {
 setUpMap().then(() => {
   setupScroll();
 });
-
-
-
-
-
-
-
-
